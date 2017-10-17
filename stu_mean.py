@@ -42,6 +42,9 @@ for bar in foo:
         #print master_list 
         #print current_list
 
+##appending the last list
+master_list.append(current_list)
+
 ##writing mean function to be used to calculate mean later
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
