@@ -1,5 +1,5 @@
 '''
-Naotaka Kinoshita & Vivien Lee
+Naotaka Kinoshita & Vivien Lee & Caleb Smith-Salzberg
 SoftDev1 pd 7
 Homework #10 - Average
 2017-10-16
@@ -50,12 +50,17 @@ def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
 
 ##print statement in form Name: NAME ID: id Average: mean(all averages which are found after name and id in the list)
-print
-for person in master_list:
-    avg = mean(person[2:])
-    print("Person: " + person[0] + " ID: " + str(person[1]) + " Average: " + str(avg) )        
-print
+def add_averages(master_list):
+    c.execute("CREATE TABLE peeps_avg (name TEXT, id INTEGER, average NUMERIC)")
+    for person in master_list:
+        avg = mean(person[2:])
+        #print("Person: " + person[0] + " ID: " + str(person[1]) + " Average: " + str(avg) )
+        q = "INSERT INTO peeps_avg VALUES ('" + person[0] + "'," + str(person[1]) + "," + str(avg) + ")"
+        print q
+        #c.execute( q )
+
+add_averages(master_list)
 
 ##close database
-##no committing because we shouldn't be changing the database
+#db.commit()
 db.close()
