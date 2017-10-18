@@ -12,55 +12,70 @@ database = "things.db"
 db = sqlite3.connect(database)
 c = db.cursor()
 
-##setting up the intial list to be added to using foo: makes list [NAME, ID] using the first element from the command
-get_first = c.execute("SELECT name, peeps.id, mark FROM peeps, courses WHERE peeps.id = courses.id LIMIT 1")
-for first in get_first:
-    #print first
-    current_person = first[0]
-    current_id = first[1]
-
-##master_list will be a list of current_lists in the format [ [NAME, ID, AVG1, AVG2, ...], ... ]
-current_list = [current_person, current_id]
-master_list = []
-
-##selecting all the people and their averages
-q = "SELECT name, peeps.id, mark FROM peeps, courses WHERE peeps.id = courses.id"
-foo = c.execute( q )
-
-##if the name is the same as previous name, add the average to the current list. Otherwise, add the current_list to master_list
-##and generate a new current_list using the new name and ID
-for bar in foo:
-    #print bar
-    if (current_person == bar[0]):
-        current_list.append(bar[2])
-        #print current_list
-    else:
-        master_list.append(current_list)  
-        current_person = bar[0]
-        current_id = bar[1]
-        current_list = [current_person, current_id, bar[2]]
-        #print master_list 
-        #print current_list
-
-##appending the last list
-master_list.append(current_list)
-
 ##writing mean function to be used to calculate mean later
-def mean(numbers):
-    return float(sum(numbers)) / max(len(numbers), 1)
+def mean(name):
+    tot = 0
+    len = 0
+    for mark in name['marks']:
+        tot += mark
+        len += 1
+    return tot/len
+
+def build_students():
+    ##selecting all the people and their averages
+    q = "SELECT name, peeps.id, mark FROM peeps, courses WHERE peeps.id = courses.id"
+    foo = c.execute( q )
+    student_grades = {}
+    
+    for bar in foo:
+        #print bar
+        student = bar[0]
+        id = bar[1]
+        mark = bar[2]
+        if student in student_grades:
+            student_grades[student]['avg'] = mean(student_grades[student])
+            student_grades[student]['marks'].append(mark)
+        else: 
+            student_grades[student] = {}
+            student_grades[student]['marks'] = []
+            student_grades[student]['marks'].append(mark)
+            student_grades[student]['avg'] = mark
+            student_grades[student]['id'] = id
+
+    return student_grades
+    
+def up_avgs(name, class_code, mark, student_id):
+    grades = build_students()
+    new_avg = mean(grades[name])
+    q = "UPDATE peeps_avg SET average = " + str(new_avg) + " WHERE id = " + str(grades[name]['id'])
+    c.execute( q )
+    qq = "INSERT INTO courses VALUES ('" + class_code + "'," + str(mark) + "," + str(student_id) + ")"
+    c.execute(qq)
+    grades[name]['avg'] = new_avg
+    return grades
 
 ##print statement in form Name: NAME ID: id Average: mean(all averages which are found after name and id in the list)
-def add_averages(master_list):
-    c.execute("CREATE TABLE peeps_avg (name TEXT, id INTEGER, average NUMERIC)")
-    for person in master_list:
-        avg = mean(person[2:])
-        #print("Person: " + person[0] + " ID: " + str(person[1]) + " Average: " + str(avg) )
-        q = "INSERT INTO peeps_avg VALUES ('" + person[0] + "'," + str(person[1]) + "," + str(avg) + ")"
-        print q
-        #c.execute( q )
+def print_grades(students):
+    for student in students:
+        grades = str(students[student]['marks'])
+        grades = grades[1:len(grades) - 1]
+        print("STUDENT: " + student + " ID: " + str(students[student]['id']) + " GRADES: " + grades + " AVG: " + str(students[student]['avg']))
 
-add_averages(master_list)
+def make_table():
+    c.execute("CREATE TABLE peeps_avg(id INTEGER, average NUMERIC)")
+
+make_table()
+
+pre_add = build_students()
+
+print ("Before adding courses:")
+print_grades(pre_add)
+
+after_add = up_avgs("kruder", "systems", 99, 1)
+
+print ("After adding course 'kruder', 'systems', 99, 1")
+print_grades(after_add)
 
 ##close database
-#db.commit()
+db.commit()
 db.close()
